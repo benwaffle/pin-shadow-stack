@@ -59,12 +59,12 @@ bool check_ret_address(void *call_ins, void *ret_addr) {
 	void on_call(void *call_ins, void *target_addr){
 		// get function names
 		string caller = RTN_FindNameByAddress((ADDRINT)call_ins);
-	    string callee = RTN_FindNameByAddress((ADDRINT)target_addr);
-	    
-	    // new instance of call
-	    call frame(call_ins, caller, target_addr, callee);
+		string callee = RTN_FindNameByAddress((ADDRINT)target_addr);
+		
+		// new instance of call
+		call frame(call_ins, caller, target_addr, callee);
 
-	    // print it out
+		// print it out
 		pr_indent(); printf("%s\n", frame.str().c_str());
 		++indent;
 
@@ -105,18 +105,18 @@ bool check_ret_address(void *call_ins, void *ret_addr) {
 #endif
 
 void trace(TRACE tr, void*) {
-    for (auto bbl = TRACE_BblHead(tr); BBL_Valid(bbl); bbl = BBL_Next(bbl)) {
-        auto tail = BBL_InsTail(bbl);
+	for (auto bbl = TRACE_BblHead(tr); BBL_Valid(bbl); bbl = BBL_Next(bbl)) {
+		auto tail = BBL_InsTail(bbl);
 
-        if      (INS_IsCall(tail)) INSERT_CALL(INS, tail, on_call, on_call_args);
-        else if (INS_IsRet(tail))  INSERT_CALL(INS, tail, on_ret,  on_ret_args);
-    }
+		if      (INS_IsCall(tail)) INSERT_CALL(INS, tail, on_call, on_call_args);
+		else if (INS_IsRet(tail))  INSERT_CALL(INS, tail, on_ret,  on_ret_args);
+	}
 }
 
 int main(int argc, char *argv[]) {
-    PIN_Init(argc, argv);
-    PIN_InitSymbols();
-    TRACE_AddInstrumentFunction(trace, nullptr);
-    PIN_StartProgram();
-    return 0;
+	PIN_Init(argc, argv);
+	PIN_InitSymbols();
+	TRACE_AddInstrumentFunction(trace, nullptr);
+	PIN_StartProgram();
+	return 0;
 }
