@@ -2,4 +2,4 @@
 *.o
 a.out
 tmp
-jmparound
+longjmp

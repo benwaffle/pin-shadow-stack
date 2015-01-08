@@ -5,15 +5,23 @@
 #include <stdarg.h>
 #include <unistd.h>
 
-#define RED "\033[01;41m"
-#define GREEN "\033[42m"
-#define BLUE "\033[44m"
-#define RESET "\033[0m"
+// terminal colors
+#define RED 	"\e[41m"
+#define GREEN 	"\e[32m"
+#define YELLOW 	"\e[33m"
+#define BLUE 	"\e[34m"
+#define PURPLE	"\e[35m"
+#define RESET 	"\e[0m"
 
-#define insert_call(prefix, item, func, ...) \
+#define INSERT_CALL(prefix, item, func, ...) \
 	prefix ## _InsertCall(item, IPOINT_BEFORE, (AFUNPTR)func, __VA_ARGS__, IARG_END)
 
-#define PIN "\033[32m[PINTOOL]\033[0m "
+
+int indent = 0;
+void pr_indent() {
+	for (int i = 0; i < indent; ++i)
+		printf("\t"); 
+}
 
 int stdin_copy = -1,
     stdout_copy = -1,
@@ -30,6 +38,11 @@ static void fixio(){
    dup2(stdin_copy, STDIN_FILENO);
    dup2(stdout_copy, STDOUT_FILENO);
    dup2(stderr_copy, STDERR_FILENO);
+}
+
+[[noreturn]] void die(string msg) {
+	fprintf(stderr, RED "%s\n" RESET, msg.c_str());
+	exit(1);
 }
 
 #endif

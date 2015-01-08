@@ -9,120 +9,114 @@
 
 using namespace std;
 
-//#define DEBUG
-
-struct call {
-	void *call_addr;
-
 #ifdef DEBUG
-	string caller, callee;
-	void *target_addr;
-	call(void *call_addr, string caller, void *target_addr, string callee) : call_addr(call_addr), caller(caller), target_addr(target_addr), callee(callee) {}
+	struct call {
+		void *call_ins; // address of call instruction
+		string caller; // calling function
+		
+		void *target_addr; // branch target (address)
+		string callee; // function being called
 
-	string toString() {
-		stringstream str;
-		str << GREEN << call_addr << RESET " in " << caller << " ==> " << target_addr << " <" << callee << ">";
-		return str.str();
-	}
+		call(void *call_ins, string caller, void *target_addr, string callee):
+			call_ins(call_ins), caller(caller), target_addr(target_addr), callee(callee) {}
+
+		call(): call_ins(nullptr), caller(""), target_addr(nullptr), callee("") {}
+
+		string str() {
+			stringstream str;
+			str << YELLOW << call_ins << RESET ": call "
+				<< target_addr << " <" << callee << ">";
+			return str.str();
+		}
+	};
 #else
-	call(void *call_addr) : call_addr(call_addr) {}
-#endif	
-};
+	typedef void *call;
+#endif
 
-/************************************************************/
-call *shadow[128];
+/************* STACK ****************/
+call shadow[128];
 int stacktop = 0;
 
-void push(call *c) {
+void push(call c) {
 	if (stacktop < 128) shadow[stacktop++] = c;
-	else fprintf(stderr, RED "Error: stack full\n" RESET);
+	else die("Error: stack full");
 }
-call *pop() {
+call pop() {
 	if (stacktop > 0) return shadow[--stacktop];
-	else return nullptr;
+	else die("Error: no valid stack frame found");
 }
-call *peek() {
-	if (stacktop > 0) return shadow[stacktop - 1];
-	else return nullptr;
+
+/************* PINTOOL *************/
+
+bool check_ret_address(void *call_ins, void *ret_addr) {
+	long diff = (char*)ret_addr - (char*)call_ins;
+	return 0 < diff && diff <= 7; // 7 bytes max between `call` and next instruction
 }
-/**************************************************************/
 
 #ifdef DEBUG
-int indent = 0;
-void pr_indent() {
-	for (int i = 0; i < indent; ++i) printf("\t");
-}
-#endif
+	#define on_call_args IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR
 
-bool validret(void *call_addr, void *ret_addr) {
-	long diff = (char*)ret_addr - (char*)call_addr;
-	return 0 < diff && diff <= 7;
-}
+	void on_call(void *call_ins, void *target_addr){
+		// get function names
+		string caller = RTN_FindNameByAddress((ADDRINT)call_ins);
+	    string callee = RTN_FindNameByAddress((ADDRINT)target_addr);
+	    
+	    // new instance of call
+	    call frame(call_ins, caller, target_addr, callee);
 
-void on_call(void *call_addr, void *target_addr){
-#ifdef DEBUG
-	string caller = RTN_FindNameByAddress((ADDRINT)call_addr);
-    string callee = RTN_FindNameByAddress((ADDRINT)target_addr);
-    
-    auto frame = new call(call_addr, caller, target_addr, callee);
+	    // print it out
+		pr_indent(); printf("%s\n", frame.str().c_str());
+		++indent;
 
-	pr_indent(); printf("%s\n", frame->toString().c_str());
-	++indent;
+		// save to shadow stack
+		push(frame);
+	}
 #else
-    auto frame = new call(call_addr);
+	#define on_call push // just push a void*
+	#define on_call_args IARG_INST_PTR
 #endif
 
-	push(frame);
-}
-
-void on_ret(void *ret_ins, void *ret_addr){
 #ifdef DEBUG
-	--indent;
-#endif
+	#define on_ret_args IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR
 
-	call *prevframe = nullptr, *candidate = nullptr;
+	void on_ret(void *ret_ins, void *ret_addr){
+		--indent;
 
-	while (prevframe == nullptr && stacktop > 0) {
-		candidate = pop();
-		if (validret(candidate->call_addr, ret_addr))
-			prevframe = candidate;
-		else {
-			delete candidate;
-#ifdef DEBUG
-			pr_indent(); printf(RED "skipping a frame" RESET "\n");
-			--indent;
-#endif
+		while (true) {
+			call prev_frame = pop();
+			if (check_ret_address(prev_frame.call_ins, ret_addr)) {
+				break;
+			} else {
+				pr_indent(); printf(RED "skipping a frame" RESET "\n");
+				--indent;
+			}
 		}
-	}
 
-	if (prevframe == nullptr) {
-		fprintf(stderr, RED "Error: no valid stack frame found for %p\nstack top = %d" RESET "\n", ret_addr, stacktop);
-		exit(1);
+		pr_indent(); printf("%p: ret (to " GREEN "%p" RESET ")\n", ret_ins, ret_addr);
 	}
-
-#ifdef DEBUG
-	pr_indent(); printf("ret at %p to " BLUE "%p" RESET "\n", ret_ins, ret_addr);
+#else
+	#define on_ret_args IARG_BRANCH_TARGET_ADDR
+	// go down the stack until we see the previous stack frame
+	// if we don't find a valid stack frame, the program exits
+	void on_ret(void *ret_addr) {
+		while (!check_ret_address(pop(), ret_addr))
+			;
+	}
 #endif
 
-	assert(validret(candidate->call_addr, ret_addr));
-}
-
-void tr_i(TRACE tr, void*) {
+void trace(TRACE tr, void*) {
     for (auto bbl = TRACE_BblHead(tr); BBL_Valid(bbl); bbl = BBL_Next(bbl)) {
         auto tail = BBL_InsTail(bbl);
 
-        if (INS_IsCall(tail))
-        	insert_call(INS, tail, on_call, IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR);
-        else if (INS_IsRet(tail))
-        	insert_call(INS, tail, on_ret, IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR);
+        if      (INS_IsCall(tail)) INSERT_CALL(INS, tail, on_call, on_call_args);
+        else if (INS_IsRet(tail))  INSERT_CALL(INS, tail, on_ret,  on_ret_args);
     }
 }
 
 int main(int argc, char *argv[]) {
-    // saveio();
     PIN_Init(argc, argv);
     PIN_InitSymbols();
-    TRACE_AddInstrumentFunction(tr_i, nullptr);
+    TRACE_AddInstrumentFunction(trace, nullptr);
     PIN_StartProgram();
     return 0;
 }
