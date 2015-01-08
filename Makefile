@@ -14,4 +14,4 @@ run: demos
 	$(PIN_ROOT)/pin -t obj-intel64/shadow-stack.so -- ./samples/hello
 
 demos:
-	make -sC samples
+	@make -sC samples
