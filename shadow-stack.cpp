@@ -38,8 +38,10 @@ call shadow[128];
 int stacktop = 0;
 
 void push(call c) {
-	if (stacktop < 128) shadow[stacktop++] = c;
-	else die("Error: stack full");
+//	if (stacktop < 128) shadow[stacktop++] = c;
+//	else die("Error: stack full");
+	shadow[stacktop] = c;
+	stacktop++;
 }
 call pop() {
 	if (stacktop > 0) return shadow[--stacktop];
@@ -48,7 +50,7 @@ call pop() {
 
 /************* PINTOOL *************/
 
-bool check_ret_address(void *call_ins, void *ret_addr) {
+__attribute__((always_inline)) bool check_ret_address(void *call_ins, void *ret_addr) {
 	long diff = (char*)ret_addr - (char*)call_ins;
 	return 0 < diff && diff <= 7; // 7 bytes max between `call` and next instruction
 }
@@ -108,8 +110,10 @@ void trace(TRACE tr, void*) {
 	for (auto bbl = TRACE_BblHead(tr); BBL_Valid(bbl); bbl = BBL_Next(bbl)) {
 		auto tail = BBL_InsTail(bbl);
 
-		if      (INS_IsCall(tail)) INSERT_CALL(INS, tail, on_call, on_call_args);
-		else if (INS_IsRet(tail))  INSERT_CALL(INS, tail, on_ret,  on_ret_args);
+		if (INS_IsCall(tail))
+			INS_InsertCall(tail, IPOINT_BEFORE, (AFUNPTR)on_call, on_call_args, IARG_END);
+		else if (INS_IsRet(tail))
+			INS_InsertCall(tail, IPOINT_BEFORE, (AFUNPTR)on_ret, on_ret_args, IARG_END);
 	}
 }
 

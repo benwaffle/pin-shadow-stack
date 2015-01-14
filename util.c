@@ -13,10 +13,6 @@
 #define PURPLE	"\e[35m"
 #define RESET 	"\e[0m"
 
-#define INSERT_CALL(prefix, item, func, ...) \
-	prefix ## _InsertCall(item, IPOINT_BEFORE, (AFUNPTR)func, __VA_ARGS__, IARG_END)
-
-
 int indent = 0;
 void pr_indent() {
 	for (int i = 0; i < indent; ++i)
