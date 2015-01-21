@@ -1,10 +1,8 @@
 DEBUG=0
-CC=clang
-CXX=clang++ -std=c++11
+CXX=clang++ -std=c++11 -g
 PIN_ROOT=../pin-2.14
 
 ifeq ($(DEBUG),1)
-	CC += -DDEBUG
 	CXX += -DDEBUG
 endif
 
