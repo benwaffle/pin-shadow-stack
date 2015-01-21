@@ -34,18 +34,21 @@ using namespace std;
 #endif
 
 /************* STACK ****************/
-call shadow[128];
+call shadow[512];
 int stacktop = 0;
 
 void push(call c) {
-//	if (stacktop < 128) shadow[stacktop++] = c;
+	if (PIN_ThreadId() != 0) return;
+//	if (stacktop < 128)
+		shadow[stacktop++] = c;
 //	else die("Error: stack full");
-	shadow[stacktop] = c;
-	stacktop++;
 }
-call pop() {
+call pop(void *x) {
 	if (stacktop > 0) return shadow[--stacktop];
-	else die("Error: no valid stack frame found");
+	else {
+		cout << "[" + RTN_FindNameByAddress((ADDRINT)x) + "]\n";
+		die("Error: no valid stack frame found ");
+	}
 }
 
 /************* PINTOOL *************/
@@ -67,7 +70,7 @@ __attribute__((always_inline)) bool check_ret_address(void *call_ins, void *ret_
 		call frame(call_ins, caller, target_addr, callee);
 
 		// print it out
-		pr_indent(); printf("%s\n", frame.str().c_str());
+		pr_indent(); printf("t%d: %s\n", PIN_ThreadId(), frame.str().c_str());
 		++indent;
 
 		// save to shadow stack
@@ -82,6 +85,8 @@ __attribute__((always_inline)) bool check_ret_address(void *call_ins, void *ret_
 	#define on_ret_args IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR
 
 	void on_ret(void *ret_ins, void *ret_addr){
+		if (PIN_ThreadId() != 0) return;
+
 		--indent;
 
 		while (true) {
@@ -89,20 +94,32 @@ __attribute__((always_inline)) bool check_ret_address(void *call_ins, void *ret_
 			if (check_ret_address(prev_frame.call_ins, ret_addr)) {
 				break;
 			} else {
-				pr_indent(); printf(RED "skipping a frame" RESET "\n");
+				pr_indent(); printf("t%d: " RED "skipping a frame" RESET "\n", PIN_ThreadId());
 				--indent;
 			}
 		}
 
-		pr_indent(); printf("%p: ret (to " GREEN "%p" RESET ")\n", ret_ins, ret_addr);
+		pr_indent(); printf("t%d: %p: ret (to " GREEN "%p" RESET ")\n", PIN_ThreadId(), ret_ins, ret_addr);
 	}
 #else
 	#define on_ret_args IARG_BRANCH_TARGET_ADDR
 	// go down the stack until we see the previous stack frame
 	// if we don't find a valid stack frame, the program exits
 	void on_ret(void *ret_addr) {
-		while (!check_ret_address(pop(), ret_addr))
-			;
+		if (PIN_ThreadId() != 0) return;
+
+		int i = 0;
+		while (true){
+			auto p = pop(ret_addr);
+			if (check_ret_address(p, ret_addr))
+				break;
+			else
+				++i;
+		}
+		if (i) printf("%d frames skipped\n", i);
+
+		// while (!check_ret_address(pop(), ret_addr))
+		// 	;
 	}
 #endif
 

@@ -1,6 +1,7 @@
 *.so
 *.o
 a.out
-tmp
-longjmp
 pin.log
+samples/
+!samples/*.c
+!samples/Makefile
