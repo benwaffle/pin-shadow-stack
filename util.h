@@ -13,10 +13,31 @@ using namespace std;
 #define PURPLE "\e[35m"
 #define RESET  "\e[0m"
 
-extern int indent;
-void pr_indent();
+// multithreaded logging
+#define N_MAX_THREADS 16
+
+#ifdef DEBUG
+	extern int numtabs[N_MAX_THREADS];
+	extern PIN_LOCK prlock;
+
+	void pr_indent(int tid);
+	// TODO: avoid cluttered output from multiple threads (print to file?)
+	// TODO: no lock on single thread
+	#define print(...) ({ \
+		PIN_GetLock(&prlock, tid); \
+		pr_indent(tid); \
+		printf(__VA_ARGS__); \
+		PIN_ReleaseLock(&prlock); \
+	})
+	#define indent() ++numtabs[tid]
+	#define unindent() --numtabs[tid]
+#endif
+
+// use stdin, stdout & stderr even after app has closed them
 void saveio();
 void fixio();
+
+// print error and exit()
 void die(string msg) __attribute__((noreturn));
 
 #endif

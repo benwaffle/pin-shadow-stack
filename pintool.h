@@ -10,12 +10,12 @@
 using namespace std;
 
 struct SSTool {
-	static stack shadow;
+	static stack shadow[N_MAX_THREADS];
 
 	__attribute__((always_inline))
 	static bool check_ret_address(void *call_ins, void *ret_addr) {
 		long diff = (char*)ret_addr - (char*)call_ins;
-		return 0 < diff && diff <= 7; // 7 bytes max between `call` and next instruction
+		return 0 < diff && diff <= 8; // 8 bytes max between `call` and next instruction
 	}
 
 #ifdef DEBUG
@@ -25,6 +25,6 @@ struct SSTool {
 #endif
 };
 
-stack SSTool::shadow;
+stack SSTool::shadow[N_MAX_THREADS];
 
 #endif

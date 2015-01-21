@@ -15,6 +15,9 @@ void trace(TRACE tr, void*) {
 int main(int argc, char *argv[]) {
 	PIN_Init(argc, argv);
 	PIN_InitSymbols();
+#ifdef DEBUG
+	PIN_InitLock(&prlock);
+#endif
 	TRACE_AddInstrumentFunction(trace, nullptr);
 	PIN_StartProgram();
 	return 0;
