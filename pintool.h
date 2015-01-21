@@ -21,7 +21,7 @@ struct SSTool {
 #ifdef DEBUG
 	#include "pintool_debug.h"
 #else
-	#include "pintool_nodebug.h"
+	#include "pintool_no_debug.h"
 #endif
 };
 
