@@ -12,14 +12,14 @@ struct stack {
 	int top = 0;
 
 	void push(call c) {
-		if (top < SHADOW_STACK_SIZE)
+		if (likely(top < SHADOW_STACK_SIZE))
 			frames[top++] = c;
 		else
 			die("Error: stack full");
 	}
 
 	call pop() {
-		if (top > 0)
+		if (likely(top > 0))
 			return frames[--top];
 		else
 			die("Error: no valid stack frame found");

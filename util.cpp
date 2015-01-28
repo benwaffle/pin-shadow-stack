@@ -5,7 +5,7 @@
 
 #ifdef DEBUG
     PIN_LOCK prlock;
-    int numtabs[N_MAX_THREADS] = {0};
+    int numtabs[128] = {0};
 
     void pr_indent(int tid) {
         for (int i = 0; i < numtabs[tid]; ++i)

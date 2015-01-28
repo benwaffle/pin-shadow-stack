@@ -13,11 +13,13 @@ using namespace std;
 #define PURPLE "\e[35m"
 #define RESET  "\e[0m"
 
-// multithreaded logging
-#define N_MAX_THREADS 16
+#define likely(x) __builtin_expect((x), 1)
+#define unlikely(x) __builtin_expect((x), 0)
+
+// logging
 
 #ifdef DEBUG
-	extern int numtabs[N_MAX_THREADS];
+	extern int numtabs[128];
 	extern PIN_LOCK prlock;
 
 	void pr_indent(int tid);
@@ -29,8 +31,8 @@ using namespace std;
 		printf(__VA_ARGS__); \
 		PIN_ReleaseLock(&prlock); \
 	})
-	#define indent() ++numtabs[tid]
-	#define unindent() --numtabs[tid]
+	#define indent() (++numtabs[tid])
+	#define unindent() (--numtabs[tid])
 #endif
 
 // use stdin, stdout & stderr even after app has closed them

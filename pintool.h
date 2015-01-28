@@ -2,18 +2,27 @@
 #define _PINTOOL_H_
 
 #include <string>
+#include <map>
 #include "pin.H"
 #include "util.h"
 #include "stack.h"
 #include "call.h"
 
-using namespace std;
+using std::string;
 
-struct SSTool {
-	static stack shadow[N_MAX_THREADS];
+namespace ShadowStack {
+	std::map<uint32_t,stack*> shadow; // thread id -> stack
 
-	__attribute__((always_inline))
-	static bool check_ret_address(void *call_ins, void *ret_addr) {
+	void thread_start(uint32_t tid, CONTEXT*, int, void*) {
+		shadow[tid] = new stack;
+	}
+	
+	void thread_end(uint32_t tid, const CONTEXT*, int, void*){
+		delete shadow[tid];
+		shadow.erase(tid);
+	}
+
+	bool check_ret_address(void *call_ins, void *ret_addr) {
 		long diff = (char*)ret_addr - (char*)call_ins;
 		return 0 < diff && diff <= 8; // 8 bytes max between `call` and next instruction
 	}
@@ -24,7 +33,5 @@ struct SSTool {
 	#include "pintool_no_debug.h"
 #endif
 };
-
-stack SSTool::shadow[N_MAX_THREADS];
 
 #endif
