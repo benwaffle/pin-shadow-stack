@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
 	PIN_AddForkFunction(FPOINT_BEFORE, warn_on_fork, nullptr);
 	PIN_AddThreadStartFunction(SS::thread_start, nullptr);
 	PIN_AddThreadFiniFunction(SS::thread_end, nullptr);
-	
+
 	TRACE_AddInstrumentFunction(trace, nullptr);
 	PIN_StartProgram();
 	return 0;

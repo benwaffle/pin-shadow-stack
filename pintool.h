@@ -16,7 +16,7 @@ namespace ShadowStack {
 	void thread_start(uint32_t tid, CONTEXT*, int, void*) {
 		shadow[tid] = new stack;
 	}
-	
+
 	void thread_end(uint32_t tid, const CONTEXT*, int, void*){
 		delete shadow[tid];
 		shadow.erase(tid);
