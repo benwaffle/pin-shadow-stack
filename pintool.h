@@ -8,10 +8,9 @@
 #include "stack.h"
 #include "call.h"
 
-using std::string;
-
 namespace ShadowStack {
-	std::map<uint32_t,stack*> shadow; // thread id -> stack
+	extern void *func_longjmp[];
+	map<uint32_t,stack*> shadow; // thread id -> stack
 
 	void thread_start(uint32_t tid, CONTEXT*, int, void*) {
 		shadow[tid] = new stack;

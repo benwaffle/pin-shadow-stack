@@ -10,6 +10,7 @@
 struct stack {
 	call frames[SHADOW_STACK_SIZE];
 	int top = 0;
+	bool in_longjmp = false;
 
 	void push(call c) {
 		if (likely(top < SHADOW_STACK_SIZE))

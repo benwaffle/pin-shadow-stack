@@ -1,17 +1,15 @@
 CC=clang
-CFLAGS=-g
-all: hello longjmp threads gtk optimized
+CFLAGS=-g -std=c11 -include stdio.h
+BINS=hello longjmp longjmp2 threads gtk optimized tailcall
 
-threads:
-	gcc $(CFLAGS) -std=c11 -lpthread $@.c -o $@
+all: $(BINS)
 
-gtk:
-	gcc $(CFLAGS) $(shell pkg-config --cflags --libs gtk+-3.0) $@.c -o $@
-
-optimized:
-	gcc $(CFLAGS) -O3 $@.c -o $@
+threads:   LDFLAGS += -lpthread
+gtk:       CFLAGS += $(shell pkg-config --cflags --libs gtk+-3.0)
+optimized: CFLAGS += -O3
+tailcall:  CFLAGS += -O3 -fno-inline -include stdlib.h
 
 .PHONY: clean
 clean:
-	rm hello longjmp threads gtk optimized
+	rm $(BINS)
 
