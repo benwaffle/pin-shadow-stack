@@ -3,9 +3,11 @@
 #include "pintool.h"
 
 namespace ShadowStack {
-	void warn_on_fork(THREADID, const CONTEXT*, void*) {
+	void warn_on_fork(THREADID tid, const CONTEXT*, void*) {
 		PIN_Detach();
-		fprintf(stderr, "Warning: this pintool does not support fork()\n");
+		locked(tid, [&](){
+			fprintf(stderr, "Warning: this pintool does not support fork()\n");
+		});
 	}
 
 	void trace(TRACE tr, void*) {
@@ -31,12 +33,12 @@ namespace ShadowStack {
 }
 
 int main(int argc, char *argv[]) {
+	// saveio();
+
 	PIN_Init(argc, argv);
 	PIN_InitSymbols();
 
-#ifdef DEBUG
 	PIN_InitLock(&prlock);
-#endif
 
 	PIN_AddForkFunction(FPOINT_BEFORE, ShadowStack::warn_on_fork, nullptr);
 	PIN_AddThreadStartFunction(ShadowStack::thread_start, nullptr);

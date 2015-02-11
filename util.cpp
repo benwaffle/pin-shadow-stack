@@ -1,17 +1,40 @@
 #include <cstdio>
+#include <cstdarg>
 #include <unistd.h>
+#include <fcntl.h>
 #include "pin.H"
 #include "util.h"
 
+PIN_LOCK prlock;
+
+void locked(THREADID tid, std::function<void()> func){
+    PIN_GetLock(&prlock, tid);
+    func();
+    PIN_ReleaseLock(&prlock);
+}
+
 #ifdef DEBUG
-    PIN_LOCK prlock;
     int numtabs[128] = {0};
 
     void pr_indent(int tid) {
         for (int i = 0; i < numtabs[tid]; ++i)
             putchar('\t');
     }
+
+    int lockprf(THREADID tid, const char *fmt, ...) {
+        // if (fcntl(1, F_GETFL) == -1 && errno == EBADF) fixio();
+
+        va_list args;
+        va_start(args, fmt);
+        PIN_GetLock(&prlock, tid);
+        pr_indent(tid);
+        int ret = vprintf(fmt, args);
+        PIN_ReleaseLock(&prlock);
+        va_end(args);
+        return ret;
+    }
 #endif
+
 
 int stdin_copy = -1,
     stdout_copy = -1,

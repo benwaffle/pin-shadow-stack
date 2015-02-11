@@ -1,8 +1,8 @@
-#ifndef _CALL_H_
-#define _CALL_H_
+#pragma once
 
 #include <string>
-#include <sstream>
+#include <ostream>
+#include "pin.H"
 #include "util.h"
 
 using namespace std;
@@ -11,28 +11,33 @@ using namespace std;
 
 	struct call {
 		void *call_ins; // address of call instruction
-		string caller; // calling function
-		
 		void *target_addr; // branch target (address)
-		string callee; // function being called
 
-		call(void *call_ins, string caller, void *target_addr, string callee):
-			call_ins(call_ins), caller(caller), target_addr(target_addr), callee(callee) {}
+		call(void *call_ins, void *target_addr):
+			call_ins(call_ins), target_addr(target_addr) {}
 
-		call(): call_ins(nullptr), caller(""), target_addr(nullptr), callee("") {}
-
-		string str() {
-			stringstream str;
-			str << YELLOW << call_ins << RESET ": call "
-				<< target_addr << " <" << callee << ">";
-			return str.str();
-		}
+		call(): call_ins(nullptr), target_addr(nullptr) {}
 	};
+
+	ostream& operator<<(ostream& os, const call& c) {
+		if (RTN_FindNameByAddress((ADDRINT)c.target_addr).find("programEntryThunkGenerator") != string::npos)
+		{
+			PIN_LockClient();
+			auto rtn = RTN_FindByAddress((ADDRINT)c.target_addr);
+			if (RTN_Valid(rtn))
+			{
+				RTN_Open(rtn);
+				auto ins = RTN_InsHead(rtn);
+				os << " [ " << StringFromAddrint(INS_Address(ins)) << " ] ";
+				RTN_Close(rtn);
+			}
+			PIN_UnlockClient();
+		}
+		return os << YELLOW << c.call_ins << RESET ": call " << c.target_addr << " <" << RTN_FindNameByAddress((ADDRINT)c.target_addr) << ">";
+	}
 
 #else
 
 	typedef void *call;
-
-#endif
 
 #endif

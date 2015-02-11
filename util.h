@@ -1,7 +1,7 @@
-#ifndef _UTIL_H_
-#define _UTIL_H_
+#pragma once
 
 #include <string>
+#include <functional>
 #include <cassert>
 
 using namespace std;
@@ -21,26 +21,22 @@ using namespace std;
 
 #ifdef DEBUG
 	extern int numtabs[128];
-	extern PIN_LOCK prlock;
 
 	void pr_indent(int tid);
-	// TODO: avoid cluttered output from multiple threads (print to file?)
-	// TODO: no lock on single thread
-	#define print(...) ({ \
-		PIN_GetLock(&prlock, tid); \
-		pr_indent(tid); \
-		printf(__VA_ARGS__); \
-		PIN_ReleaseLock(&prlock); \
-	})
 	#define indent() (++numtabs[tid])
 	#define unindent() (--numtabs[tid])
+
+	int lockprf(THREADID tid, const char *fmt, ...);
 #endif
+
+extern PIN_LOCK prlock;
+// TODO: avoid cluttered output from multiple threads (print to file?)
+// TODO: no lock on single thread
+void locked(THREADID tid, std::function<void()> func);
 
 // use stdin, stdout & stderr even after app has closed them
 void saveio();
 void fixio();
 
 // print error and exit()
-void die(string msg) __attribute__((noreturn));
-
-#endif
+void die [[noreturn]] (string msg);// __attribute__((noreturn));

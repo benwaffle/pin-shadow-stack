@@ -1,5 +1,4 @@
-#ifndef _STACK_H_
-#define _STACK_H_
+#pragma once
 
 #include "pin.H"
 #include "call.h"
@@ -16,15 +15,27 @@ struct stack {
 		if (likely(top < SHADOW_STACK_SIZE))
 			frames[top++] = c;
 		else
-			die("Error: stack full");
+			die("push(): stack full");
 	}
 
 	call pop() {
 		if (likely(top > 0))
 			return frames[--top];
 		else
-			die("Error: no valid stack frame found");
+			die("pop(): stack empty");
 	}
 };
 
+ostream& operator<<(ostream& os, const stack& s){
+	PIN_LockClient();
+	for (int i = s.top; i >= 0; --i) {
+#ifdef DEBUG
+		void *c = s.frames[i].call_ins;
+#else
+		void *c = s.frames[i];
 #endif
+		os << c << "\t<" << RTN_FindNameByAddress((ADDRINT)c) << ">\n";
+	}
+	PIN_UnlockClient();
+	return os;
+}

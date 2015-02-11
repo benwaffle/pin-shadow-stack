@@ -7,8 +7,6 @@ void on_call(void *addr, void *target_addr, THREADID tid){
 		shadow[tid]->in_longjmp = true;
 }
 
-// go down the stack until we see the previous stack frame
-// if we don't find a valid stack frame, the program exits
 void on_ret(void *ret_addr, THREADID tid) {
 #define RET_ADDR_MATCH ({check_ret_address(shadow[tid]->pop(), ret_addr);})
 	if (unlikely(!RET_ADDR_MATCH)){

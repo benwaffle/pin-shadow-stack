@@ -1,7 +1,7 @@
-#ifndef _PINTOOL_H_
-#define _PINTOOL_H_
+#pragma once
 
 #include <string>
+#include <iostream>
 #include <map>
 #include "pin.H"
 #include "util.h"
@@ -10,7 +10,7 @@
 
 namespace ShadowStack {
 	extern void *func_longjmp[];
-	map<uint32_t,stack*> shadow; // thread id -> stack
+	map<uint8_t,stack*> shadow; // thread id -> stack
 
 	void thread_start(uint32_t tid, CONTEXT*, int, void*) {
 		shadow[tid] = new stack;
@@ -21,7 +21,7 @@ namespace ShadowStack {
 		shadow.erase(tid);
 	}
 
-	bool check_ret_address(void *call_ins, void *ret_addr) {
+	static inline bool check_ret_address(void *call_ins, void *ret_addr) {
 		long diff = (char*)ret_addr - (char*)call_ins;
 		return 0 < diff && diff <= 8; // 8 bytes max between `call` and next instruction
 	}
@@ -32,5 +32,3 @@ namespace ShadowStack {
 	#include "pintool_no_debug.h"
 #endif
 };
-
-#endif
