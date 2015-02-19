@@ -1,6 +1,5 @@
 #pragma once
 
-#include <string>
 #include <ostream>
 #include "pin.H"
 #include "util.h"
@@ -20,19 +19,6 @@ using namespace std;
 	};
 
 	ostream& operator<<(ostream& os, const call& c) {
-		if (RTN_FindNameByAddress((ADDRINT)c.target_addr).find("programEntryThunkGenerator") != string::npos)
-		{
-			PIN_LockClient();
-			auto rtn = RTN_FindByAddress((ADDRINT)c.target_addr);
-			if (RTN_Valid(rtn))
-			{
-				RTN_Open(rtn);
-				auto ins = RTN_InsHead(rtn);
-				os << " [ " << StringFromAddrint(INS_Address(ins)) << " ] ";
-				RTN_Close(rtn);
-			}
-			PIN_UnlockClient();
-		}
 		return os << YELLOW << c.call_ins << RESET ": call " << c.target_addr << " <" << RTN_FindNameByAddress((ADDRINT)c.target_addr) << ">";
 	}
 
