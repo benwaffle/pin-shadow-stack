@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <iostream>
 #include <functional>
 #include <cassert>
 
@@ -10,7 +11,7 @@ using namespace std;
 #define RED    "\e[41m"
 #define GREEN  "\e[32m"
 #define YELLOW "\e[33m"
-#define BLUE   "\e[34m"
+#define BLUE   "\e[44m"
 #define PURPLE "\e[35m"
 #define RESET  "\e[0m"
 
@@ -23,20 +24,20 @@ using namespace std;
 	extern int numtabs[128];
 
 	void pr_indent(int tid);
-	#define indent() (++numtabs[tid])
-	#define unindent() (--numtabs[tid])
+	#define indent() (++numtabs[PIN_ThreadId()])
+	#define unindent() (--numtabs[PIN_ThreadId()])
 
-	int lockprf(THREADID tid, const char *fmt, ...);
+	int lockprf(const char *fmt, ...);
 #endif
 
 extern PIN_LOCK prlock;
 // TODO: avoid cluttered output from multiple threads (print to file?)
 // TODO: no lock on single thread
-void locked(THREADID tid, std::function<void()> func);
+void locked(std::function<void(THREADID)> func);
 
 // use stdin, stdout & stderr even after app has closed them
 void saveio();
 void fixio();
 
 // print error and exit()
-void die [[noreturn]] (string msg);// __attribute__((noreturn));
+ void die (string msg) __attribute__((noreturn));

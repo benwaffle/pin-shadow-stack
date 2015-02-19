@@ -1,7 +1,7 @@
 CC=clang
 CFLAGS=-g -std=c11 -include stdio.h
 CXXFLAGS=-g -std=c++11
-BINS=hello longjmp longjmp2 threads gtk optimized tailcall c++ thunk
+BINS=hello longjmp longjmp2 threads gtk optimized tailcall c++ thunk signal
 
 all: $(BINS)
 

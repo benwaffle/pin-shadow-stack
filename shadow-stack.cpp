@@ -5,7 +5,7 @@
 namespace ShadowStack {
 	void warn_on_fork(THREADID tid, const CONTEXT*, void*) {
 		PIN_Detach();
-		locked(tid, [&](){
+		locked([](THREADID){
 			fprintf(stderr, "Warning: this pintool does not support fork()\n");
 		});
 	}
@@ -20,16 +20,6 @@ namespace ShadowStack {
 				INS_InsertCall(tail, IPOINT_BEFORE, (AFUNPTR)on_ret, on_ret_args, IARG_END);
 		}
 	}
-
-	void *func_longjmp[2] = {nullptr};
-	
-	void find_longjmp(IMG img, void*) {
-		RTN longjmp_rtn = RTN_FindByName(img, "__longjmp");
-		if (longjmp_rtn != RTN_Invalid()) {
-			if (func_longjmp[0] == nullptr) func_longjmp[0] = (void*)RTN_Funptr(longjmp_rtn);
-			else						    func_longjmp[1] = (void*)RTN_Funptr(longjmp_rtn);
-		}
-	}
 }
 
 int main(int argc, char *argv[]) {
@@ -38,14 +28,16 @@ int main(int argc, char *argv[]) {
 	PIN_Init(argc, argv);
 	PIN_InitSymbols();
 
+	ShadowStack::shadow = PIN_ClaimToolRegister();
+
 	PIN_InitLock(&prlock);
 
 	PIN_AddForkFunction(FPOINT_BEFORE, ShadowStack::warn_on_fork, nullptr);
-	PIN_AddThreadStartFunction(ShadowStack::thread_start, nullptr);
-	PIN_AddThreadFiniFunction(ShadowStack::thread_end, nullptr);
+	PIN_AddThreadStartFunction(        ShadowStack::thread_start, nullptr);
+	PIN_AddThreadFiniFunction(         ShadowStack::thread_end,   nullptr);
 
-	IMG_AddInstrumentFunction(ShadowStack::find_longjmp, nullptr);
-	TRACE_AddInstrumentFunction(ShadowStack::trace, nullptr);
+	PIN_AddContextChangeFunction(      ShadowStack::on_signal,    nullptr);
+	TRACE_AddInstrumentFunction(       ShadowStack::trace,        nullptr);
 
 	PIN_StartProgram();
 	return 0;

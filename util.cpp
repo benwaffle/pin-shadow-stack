@@ -7,9 +7,10 @@
 
 PIN_LOCK prlock;
 
-void locked(THREADID tid, std::function<void()> func){
+void locked(std::function<void(THREADID)> func){
+    int tid = PIN_ThreadId();
     PIN_GetLock(&prlock, tid);
-    func();
+    func(tid);
     PIN_ReleaseLock(&prlock);
 }
 
@@ -21,13 +22,13 @@ void locked(THREADID tid, std::function<void()> func){
             putchar('\t');
     }
 
-    int lockprf(THREADID tid, const char *fmt, ...) {
+    int lockprf(const char *fmt, ...) {
         // if (fcntl(1, F_GETFL) == -1 && errno == EBADF) fixio();
 
         va_list args;
         va_start(args, fmt);
-        PIN_GetLock(&prlock, tid);
-        pr_indent(tid);
+        PIN_GetLock(&prlock, PIN_ThreadId());
+        pr_indent(PIN_ThreadId());
         int ret = vprintf(fmt, args);
         PIN_ReleaseLock(&prlock);
         va_end(args);

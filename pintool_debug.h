@@ -1,46 +1,68 @@
-#define on_call_args IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR, IARG_THREAD_ID
-#define on_ret_args IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR, IARG_THREAD_ID
+#define on_call_args IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR, IARG_CONST_CONTEXT
+#define on_ret_args  IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR, IARG_CONST_CONTEXT
 
-void on_call(void *call_ins, void *target_addr, THREADID tid){
+void on_call(void *call_ins, void *target_addr, const CONTEXT *ctx)
+{
+	auto st = (callstack*)PIN_GetContextReg(ctx, shadow);
+
+	if (RTN_FindNameByAddress((ADDRINT)target_addr) == "_dl_fixup") {
+		// st->pltsetup = call_ins;
+		lockprf("t%d: _dl_fixup()\n", PIN_ThreadId());
+	}
+
 	call frame(call_ins, target_addr);
 
-	locked(tid, [&](){
-		pr_indent(tid);
-		cout << "t" << tid << ": " << frame << "\n";
-	});
-	
-	indent();
-
-	if (unlikely(func_longjmp[0] == target_addr || func_longjmp[1] == target_addr)) {
-		shadow[tid]->in_longjmp = true;
-		lockprf(tid, RED "longjmp" RESET "\n");
+	if (st->pltsetup == 0) {
+		locked([&](THREADID tid){
+			pr_indent(tid);
+			cout << "t" << tid << ": " << frame << "\n";
+		});
+		indent();
 	}
-	shadow[tid]->push(frame);
+
+	st->push(frame);
 }
 
-void on_ret(void *ret_ins, void *ret_addr, THREADID tid){
-#define RET_ADDR_MATCH ({check_ret_address(shadow[tid]->pop().call_ins, ret_addr);})
-	unindent();
-	if (unlikely(shadow[tid]->in_longjmp)) {
-		if (!RET_ADDR_MATCH) {
-// REMOVE_THIS:
-			lockprf(tid, RED "unwinding" RESET "\n");
-			do {
-				lockprf(tid, "t%d: %p " RED "skipping a frame" RESET "\n", tid, ret_addr);
-				unindent();
-			} while (!RET_ADDR_MATCH);
-			shadow[tid]->in_longjmp = false;
-		}
-	} else {
-		bool val = RET_ADDR_MATCH;
-		if (!val) {
-			locked(tid, [&](){
-				cout << *shadow[tid] << "\n";
-			});
-			assert(val);
-			// goto REMOVE_THIS;
-		}
+void on_ret(void *ret_ins, void *ret_addr, const CONTEXT *ctx)
+{
+#define RET_ADDR_MATCH ({ check_ret_address(st->pop().call_ins, ret_addr); })
+	auto st = (callstack*)PIN_GetContextReg(ctx, shadow);
+	
+	if (st->pltsetup == 0) unindent();
+
+	// if (st->ignore){
+		// st->ignore = false;
+		// return;
+	// }
+
+	if (!RET_ADDR_MATCH) {
+		do {
+			if (st->pltsetup == 0) lockprf("t%d: %p " RED "skipping a frame" RESET "\n", PIN_ThreadId(), ret_addr);
+			if (st->pltsetup == 0) unindent();
+		} while (!RET_ADDR_MATCH);
 	}
-	lockprf(tid, "t%d: %p: ret (to " GREEN "%p" RESET ")\n", tid, ret_ins, ret_addr);
+	
+	if (st->pltsetup == 0)
+		lockprf("t%d: %p: ret (to " GREEN "%p" RESET ")\n", PIN_ThreadId(), ret_ins, ret_addr);
+	else
+		if (check_ret_address(st->pltsetup, ret_addr))
+			st->pltsetup = 0;
 #undef RET_ADDR_MATCH
+}
+
+void on_signal(THREADID tid,
+	           CONTEXT_CHANGE_REASON reason,
+	           const CONTEXT *from,
+	           CONTEXT *to,
+	           int32_t info,
+	           void*)
+{
+	if (reason == CONTEXT_CHANGE_REASON_SIGNAL) {
+		auto st = (callstack*)PIN_GetContextReg(from, shadow);
+		st->ignore = true;
+		lockprf(BLUE "t%d handling signal %d (%s)" RESET "\n", tid, info, strsignal(info));
+		ADDRINT brsp = PIN_GetContextReg(from, REG_STACK_PTR),
+				arsp = PIN_GetContextReg(to  , REG_STACK_PTR);
+		lockprf("stack top = %p, then %p\n", *(void**)brsp, *(void**)arsp);
+	}
 }

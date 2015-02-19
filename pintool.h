@@ -1,24 +1,22 @@
 #pragma once
 
 #include <string>
+#include <cstring>
 #include <iostream>
-#include <map>
 #include "pin.H"
 #include "util.h"
 #include "stack.h"
 #include "call.h"
 
 namespace ShadowStack {
-	extern void *func_longjmp[];
-	map<uint8_t,stack*> shadow; // thread id -> stack
+	REG shadow;
 
-	void thread_start(uint32_t tid, CONTEXT*, int, void*) {
-		shadow[tid] = new stack;
+	void thread_start(uint32_t tid, CONTEXT *ctx, int, void*) {
+		PIN_SetContextReg(ctx, shadow, (ADDRINT)new callstack);
 	}
 
-	void thread_end(uint32_t tid, const CONTEXT*, int, void*){
-		delete shadow[tid];
-		shadow.erase(tid);
+	void thread_end(uint32_t tid, const CONTEXT *ctx, int, void*){
+		delete (callstack*)PIN_GetContextReg(ctx, shadow);
 	}
 
 	static inline bool check_ret_address(void *call_ins, void *ret_addr) {
