@@ -5,8 +5,6 @@
 #include <functional>
 #include <cassert>
 
-using namespace std;
-
 // terminal colors
 #define RED    "\e[41m"
 #define GREEN  "\e[32m"
@@ -40,4 +38,4 @@ void saveio();
 void fixio();
 
 // print error and exit()
- void die (string msg) __attribute__((noreturn));
+ void die (std::string msg) __attribute__((noreturn));

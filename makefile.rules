@@ -30,7 +30,7 @@ SANITY_SUBSET :=
 
 # This defines the tools which will be run during the the tests, and were not already defined in
 # TEST_TOOL_ROOTS.
-TOOL_ROOTS := shadow-stack
+TOOL_ROOTS := shadow_stack
 
 # This defines the static analysis tools which will be run during the the tests. They should not
 # be defined in TEST_TOOL_ROOTS. If a test with the same name exists, it should be defined in
@@ -44,7 +44,7 @@ SA_TOOL_ROOTS :=
 APP_ROOTS :=
 
 # This defines any additional object files that need to be compiled.
-OBJECT_ROOTS := util
+OBJECT_ROOTS := util $(TOOL_OBJ)
 
 # This defines any additional dlls (shared objects), other than the pintools, that need to be compiled.
 DLL_ROOTS := 
@@ -73,5 +73,5 @@ LIB_ROOTS :=
 # This section contains the build rules for all binaries that have special build rules.
 # See makefile.default.rules for the default build rules.
 
-$(OBJDIR)shadow-stack$(PINTOOL_SUFFIX): $(OBJDIR)shadow-stack$(OBJ_SUFFIX) $(OBJDIR)util$(OBJ_SUFFIX)
+$(OBJDIR)shadow_stack$(PINTOOL_SUFFIX): $(OBJDIR)shadow_stack$(OBJ_SUFFIX) $(OBJDIR)util$(OBJ_SUFFIX) $(OBJDIR)$(TOOL_OBJ)$(OBJ_SUFFIX)
 		$(LINKER) $(TOOL_LDFLAGS_NOOPT) $(LINK_EXE)$@ $(^:%.h=) $(TOOL_LPATHS) $(TOOL_LIBS)

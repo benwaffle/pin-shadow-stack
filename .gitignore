@@ -6,3 +6,4 @@ samples/
 !samples/*.c
 !samples/*.cpp
 !samples/Makefile
+!samples/test.sh

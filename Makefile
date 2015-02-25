@@ -1,6 +1,12 @@
-DEBUG=1
+DEBUG=0
 CXX=clang++
 PIN_ROOT=../pin-2.14
+
+ifeq ($(DEBUG),1)
+	TOOL_OBJ = pintool_debug
+else
+	TOOL_OBJ = pintool_no_debug
+endif
 
 include makefile.intel
 
@@ -11,7 +17,7 @@ ifeq ($(DEBUG),1)
 endif
 
 run: demos
-	$(PIN_ROOT)/pin.sh -t obj-intel64/shadow-stack.so -- ./samples/hello
+	$(PIN_ROOT)/pin.sh -t obj-intel64/shadow_stack.so -- ./samples/hello
 
 demos:
 	make -sC samples
