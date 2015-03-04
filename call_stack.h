@@ -9,7 +9,7 @@
 class CallStack
 {
 public:
-	void *call_phase2 = nullptr;
+	ADDRINT call_phase2 = 0;
 
 	inline
 	void push(CallFrame c) {

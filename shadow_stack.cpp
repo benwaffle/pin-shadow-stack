@@ -39,12 +39,12 @@ namespace ShadowStack
 	{
 		auto cxx_uw_phase2 = RTN_FindByName(img, "_Unwind_RaiseException_Phase2");
 		if (RTN_Valid(cxx_uw_phase2))
-			PinTool::cxx_uw_phase2 = reinterpret_cast<void*>(RTN_Address(cxx_uw_phase2));
+			PinTool::cxx_uw_phase2 = RTN_Address(cxx_uw_phase2);
 	}
 }
 
 REG ShadowStack::PinTool::ctx_call_stack;
-void *ShadowStack::PinTool::cxx_uw_phase2 = nullptr;
+ADDRINT ShadowStack::PinTool::cxx_uw_phase2 = 0;
 
 int main(int argc, char *argv[])
 {

@@ -7,8 +7,8 @@
 #ifdef DEBUG
 
 	struct CallFrame {
-		void *call_ins; // address of call instruction
-		void *target_addr; // target of call instruction
+		ADDRINT call_ins; // address of call instruction
+		ADDRINT target_addr; // address of target instruction
 	};
 
 	inline
@@ -21,6 +21,6 @@
 
 #else
 
-	typedef void* CallFrame;
+	typedef ADDRINT CallFrame;
 
 #endif
