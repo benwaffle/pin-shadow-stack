@@ -14,8 +14,8 @@
 	inline
 	std::ostream& operator<<(std::ostream& os, const CallFrame& c) {
 		return os <<
-			YELLOW << c.call_ins << RESET ": "
-			"call " << c.target_addr <<
+			YELLOW << (void*)c.call_ins << RESET ": "
+			"call " << (void*)c.target_addr <<
 			" <" << RTN_FindNameByAddress((ADDRINT)c.target_addr) << ">";
 	}
 
