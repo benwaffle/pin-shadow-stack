@@ -1,5 +1,4 @@
 DEBUG=0
-CXX=clang++
 PIN_ROOT=../pin-2.14
 
 ifeq ($(DEBUG),1)
@@ -10,8 +9,7 @@ endif
 
 include makefile.intel
 
-TOOL_CXXFLAGS += -std=c++11 -g
-
+TOOL_CXXFLAGS += -std=c++11
 ifeq ($(DEBUG),1)
 	TOOL_CXXFLAGS += -DDEBUG
 endif

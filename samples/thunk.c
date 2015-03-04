@@ -1,14 +1,13 @@
-typedef int (*func)();
+typedef int (*add_func)(int);
 
-func a(int i){
-	int x = i*2;
-	int b() {
-		return x+i;	
+add_func adder(int a) {
+	int adder2(int b) {
+		return a+b;
 	}
-	return b;
+	return adder2;
 }
 
 int main() {
-	func b = a(3);
-	printf("%d\n", b());
+	add_func z = adder(3);
+	printf("%d\n", z(4));
 }

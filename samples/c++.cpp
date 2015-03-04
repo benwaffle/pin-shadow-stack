@@ -1,20 +1,36 @@
-#include <iostream>
+#include <cstdio>
 
-struct thing {
-	virtual int getInt() = 0;
+void thrower() {
+	throw 1234;
+}
 
-	void unsafe() {
-		throw 1234;
+void thrower2() {
+	throw 1234;
+}
+
+void dummy2() {
+	thrower();
+}
+
+void dummy1() {
+	dummy2();
+}
+
+void catcher() {
+	try {
+		dummy1();
+	} catch (...) {
 	}
-};
-
-struct item : thing {
-	int getInt() {
-		return 4;
-	}
-};
+}
 
 int main() {
-	std::cout << item().getInt() << "\n";
-	item().unsafe();
+	puts("call safe func");
+	catcher();
+
+	puts("try/catch unsafe func");
+	try { thrower(); }
+	catch (...) {}
+
+	puts("call unsafe func");
+	thrower2();
 }

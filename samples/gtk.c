@@ -6,8 +6,8 @@ gboolean quit(gpointer p){
 }
 
 int main(int argc, char **argv) {
-	puts("start");
 	gtk_init(&argc, &argv);
+	puts("start");
 	g_timeout_add(1000, quit, NULL);
 	gtk_main();
 	puts("end");

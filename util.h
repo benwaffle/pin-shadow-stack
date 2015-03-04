@@ -25,7 +25,7 @@
 	#define indent() (++numtabs[PIN_ThreadId()])
 	#define unindent() (--numtabs[PIN_ThreadId()])
 
-	int lockprf(const char *fmt, ...);
+	int lockprf (const char *fmt, ...) __attribute__(( format(printf, 1, 2) ));
 #endif
 
 extern PIN_LOCK prlock;
@@ -38,4 +38,4 @@ void saveio();
 void fixio();
 
 // print error and exit()
- void die (std::string msg) __attribute__((noreturn));
+void die (std::string msg) __attribute__(( noreturn ));

@@ -1,4 +1,4 @@
-Put [intel pin](https://software.intel.com/en-us/articles/pintool-downloads) in `../pin-2.14`
+Put [intel pin](http://pintool.org) in `../pin-2.14`
 
 `make` to build the pintool 
 
