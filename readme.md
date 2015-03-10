@@ -1,3 +1,10 @@
+## Binary instrumentation (at runtime) for security
+
+This implements a shadow stack, which keeps a copy of every return address to prevent ROP attacks. It also handles `setjmp`/`longjmp`, unix signals, and C++ exception handling.
+
+How to use
+----
+
 Put [intel pin](http://pintool.org) in `../pin-2.14`
 
 `make` to build the pintool 

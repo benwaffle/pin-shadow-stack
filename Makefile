@@ -1,4 +1,4 @@
-DEBUG=1
+DEBUG=0
 PIN_ROOT=../pin-2.14
 
 ifeq ($(DEBUG),1)

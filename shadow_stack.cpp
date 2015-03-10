@@ -19,11 +19,15 @@ namespace ShadowStack
 			auto tail = BBL_InsTail(bbl);
 
 			if (INS_IsCall(tail))
+			{
 				INS_InsertCall(tail, IPOINT_BEFORE, reinterpret_cast<AFUNPTR>(&PinTool::on_call),
-					IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR, IARG_CONST_CONTEXT, IARG_END);
+					IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR, IARG_REG_VALUE, PinTool::ctx_call_stack, IARG_END);
+			}
 			else if (INS_IsRet(tail))
+			{
 				INS_InsertCall(tail, IPOINT_BEFORE, reinterpret_cast<AFUNPTR>(&PinTool::on_ret),
-					IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR, IARG_CONST_CONTEXT, IARG_END);
+					IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR, IARG_REG_VALUE, PinTool::ctx_call_stack, IARG_REG_VALUE, REG_RBP, IARG_END);
+			}
 		}
 	}
 
