@@ -1,5 +1,6 @@
 #include "pin.H"
 #include "shadow_stack.h"
+#include <unwind.h>
 
 namespace ShadowStack
 {
@@ -19,15 +20,9 @@ namespace ShadowStack
 			auto tail = BBL_InsTail(bbl);
 
 			if (INS_IsCall(tail))
-			{
-				INS_InsertCall(tail, IPOINT_BEFORE, reinterpret_cast<AFUNPTR>(&PinTool::on_call),
-					IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR, IARG_REG_VALUE, PinTool::ctx_call_stack, IARG_END);
-			}
+				INS_InsertCall(tail, IPOINT_BEFORE, AFUNPTR(&PinTool::on_call), on_call_args, IARG_END);
 			else if (INS_IsRet(tail))
-			{
-				INS_InsertCall(tail, IPOINT_BEFORE, reinterpret_cast<AFUNPTR>(&PinTool::on_ret),
-					IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR, IARG_REG_VALUE, PinTool::ctx_call_stack, IARG_REG_VALUE, REG_RBP, IARG_END);
-			}
+				INS_InsertCall(tail, IPOINT_BEFORE, AFUNPTR(&PinTool::on_ret), on_ret_args, IARG_END);
 		}
 	}
 
@@ -39,20 +34,28 @@ namespace ShadowStack
 		});
 	}
 
-	void on_image(IMG img, void*)
+	void find_cxx_phase2(RTN rtn, void*)
 	{
-		auto cxx_uw_phase2 = RTN_FindByName(img, "_Unwind_RaiseException_Phase2");
-		if (RTN_Valid(cxx_uw_phase2))
-			PinTool::cxx_uw_phase2 = RTN_Address(cxx_uw_phase2);
+		if (RTN_Name(rtn) == "_Unwind_RaiseException_Phase2")
+		{
+			RTN_Open(rtn);
+			RTN_InsertCall(rtn, IPOINT_BEFORE, AFUNPTR(&PinTool::on_call_phase2),
+				IARG_REG_VALUE, PinTool::ctx_call_stack, IARG_FUNCARG_ENTRYPOINT_VALUE, 1, IARG_END);
+			RTN_InsertCall(rtn, IPOINT_AFTER, AFUNPTR(&PinTool::on_ret_phase2),
+				IARG_REG_VALUE, PinTool::ctx_call_stack, IARG_END);
+			RTN_Close(rtn);
+		}
 	}
 }
 
 REG ShadowStack::PinTool::ctx_call_stack;
-ADDRINT ShadowStack::PinTool::cxx_uw_phase2 = 0;
 
 int main(int argc, char *argv[])
 {
 	// saveio();
+
+	// use when we print like crazy (eg gtk)
+	// setvbuf(stdout, nullptr, _IOFBF, 4096);
 
 	PIN_Init(argc, argv);
 	PIN_InitSymbols();
@@ -65,7 +68,7 @@ int main(int argc, char *argv[])
 	PIN_AddThreadStartFunction(ShadowStack::on_thread_start, nullptr);
 	PIN_AddThreadFiniFunction(ShadowStack::on_thread_end, nullptr);
 	PIN_AddContextChangeFunction(ShadowStack::PinTool::on_signal, nullptr);
-	IMG_AddInstrumentFunction(ShadowStack::on_image, nullptr);
+	RTN_AddInstrumentFunction(ShadowStack::find_cxx_phase2, nullptr);
 	TRACE_AddInstrumentFunction(ShadowStack::do_trace, nullptr);
 
 	PIN_StartProgram();

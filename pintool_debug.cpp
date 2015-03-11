@@ -7,15 +7,13 @@
 #include "call_frame.h"
 #include "util.h"
 
-void ShadowStack::PinTool::on_call(ADDRINT call_ins, ADDRINT target_addr, const CONTEXT *ctx)
+void ShadowStack::PinTool::on_call(
+	const ADDRINT call_ins,
+	const ADDRINT target_addr,
+	CallStack *stack)
 {
-	auto stack = reinterpret_cast<CallStack*>(PIN_GetContextReg(ctx, ctx_call_stack));
-
 	CallFrame frame = {call_ins, target_addr};
 	stack->push(frame);
-
-	if (target_addr == cxx_uw_phase2)
-		stack->call_phase2 = call_ins;
 
 	locked([&](THREADID tid){
 		pr_indent(tid);
@@ -24,44 +22,23 @@ void ShadowStack::PinTool::on_call(ADDRINT call_ins, ADDRINT target_addr, const 
 	indent();
 }
 
-void ShadowStack::PinTool::on_ret(ADDRINT ret_ins, ADDRINT ret_addr, const CONTEXT *ctx)
+void ShadowStack::PinTool::on_ret(
+	const ADDRINT ret_ins,
+	const ADDRINT ret_addr,
+	CallStack *stack)
 {
-	const int tid = PIN_ThreadId();
 	unindent();
-	auto stack = reinterpret_cast<CallStack*>(PIN_GetContextReg(ctx, ctx_call_stack));
 
-	CallFrame prev_frame;
-	while(prev_frame = stack->pop(),
-		unlikely( false == is_return_addr(prev_frame.call_ins, ret_addr) )) {
-			lockprf("t%d: " RED "skipping a frame" RESET "\n", tid);
+	while(!is_return_addr(stack->pop().call_ins, ret_addr)) {
+			lockprf("t%d: " RED "skipping a frame" RESET "\n", PIN_ThreadId());
 			unindent();
 	}
 
-	if (unlikely( stack->call_phase2 != 0 ))
-		if (likely( is_return_addr(stack->call_phase2, ret_addr) )) { // returning from _Unwind_RaiseException_Phase2
-			stack->call_phase2 = 0;
-
-			ADDRINT rbp = PIN_GetContextReg(ctx, REG_RBP); // rbp
-			ADDRINT catch_addr = *(ADDRINT*)(rbp - 0x218); // rip in catch, i.e. return address
-			ADDRINT catch_func = *(ADDRINT*)(rbp - 0x1F8); // address of function containing catch
-
-			lockprf(BLUE "catch handler @ %p in %s" RESET "\n", (void*)catch_addr, RTN_FindNameByAddress((ADDRINT)catch_func).c_str());
-
-			while (likely( stack->peek().target_addr != catch_func )) {
-				stack->pop();
-				unindent();
-			}
-
-			CallFrame handler = {catch_addr, catch_addr}; // fake call_ins, target_addr doesn't matter
-			stack->push(handler);
-		}
-
-	lockprf("t%d: %p: ret (to " GREEN "%p" RESET ")\n", tid, (void*)ret_ins, (void*)ret_addr);
+	lockprf("t%d: %p: ret (to " GREEN "%p" RESET ")\n", PIN_ThreadId(), (void*)ret_ins, (void*)ret_addr);
 }
 
 void ShadowStack::PinTool::on_signal(THREADID tid, CONTEXT_CHANGE_REASON reason,
-	           const CONTEXT *orig_ctx, CONTEXT *signal_ctx,
-	           int32_t info, void*)
+	const CONTEXT *orig_ctx, CONTEXT *signal_ctx, int32_t info, void*)
 {
 	if (likely( reason == CONTEXT_CHANGE_REASON_SIGNAL )) {
 		auto stack = reinterpret_cast<CallStack*>(PIN_GetContextReg(signal_ctx, ctx_call_stack));
@@ -76,6 +53,36 @@ void ShadowStack::PinTool::on_signal(THREADID tid, CONTEXT_CHANGE_REASON reason,
 	} else if (reason == CONTEXT_CHANGE_REASON_FATALSIGNAL) {
 		lockprf(RED "t%d: client program received fatal signal %d (%s)" RESET "\n", tid, info, strsignal(info));
 	} else {
-		lockprf(BLUE "t%d: unknown context change %d" RESET "\n", tid, (int)reason);
+		lockprf(BLUE "t%d: unknown context change (%d)" RESET "\n", tid, (int)reason);
 	}
+}
+
+void ShadowStack::PinTool::on_call_phase2(CallStack *stack, _Unwind_Context *uw)
+{
+	stack->handler_ctx = uw;
+}
+
+void ShadowStack::PinTool::on_ret_phase2(CallStack *stack)
+{
+	PIN_LockClient();
+
+	ADDRINT catch_addr = (ADDRINT) _Unwind_GetIP(stack->handler_ctx); // IP in catch, i.e. return address
+	ADDRINT catch_func = RTN_Address(RTN_FindByAddress(catch_addr)); // address of function containing catch
+
+	CallFrame top_frame_copy = stack->pop(); // IPOINT_AFTER is right at the ret instruction, so save the top frame
+
+	while (likely( RTN_Address(RTN_FindByAddress(stack->peek().call_ins)) != catch_func ))
+	{
+		stack->pop();
+		unindent();
+	}
+
+	CallFrame handler = { catch_addr, 0 };
+	stack->push(handler);
+	stack->push(top_frame_copy);
+
+	PIN_UnlockClient();
+
+	lockprf(BLUE "t%d: catch handler @ %p in %p <%s>" RESET "\n", PIN_ThreadId(),
+		(void*)catch_addr, (void*)catch_func, RTN_FindNameByAddress(ADDRINT(catch_func)).c_str());
 }

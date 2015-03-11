@@ -8,7 +8,7 @@ PIN_ROOT = ../pin-2.14
 
 include mk/Intel.mk
 
-TOOL_CXXFLAGS += -std=c++11
+TOOL_CXXFLAGS += -std=c++11 -g -rdynamic
 
 debug: TOOL_CXXFLAGS += -DDEBUG
 debug: all

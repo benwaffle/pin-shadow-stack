@@ -1,5 +1,7 @@
 #pragma once
 
+#include <unwind.h> // struct _Unwind_Context and helper functions
+
 #include "pin.H"
 
 #include "call_stack.h"
@@ -9,14 +11,26 @@ namespace ShadowStack {
 	class PinTool {
 	public:
 		static REG ctx_call_stack;
-		static ADDRINT cxx_uw_phase2;
 
-		static void on_call(ADDRINT call_ins, ADDRINT target_addr, CallStack *ctx);
-		static void on_ret(ADDRINT ret_ins, ADDRINT target_addr, CallStack *ctx, ADDRINT rbp);
+#ifdef DEBUG
+		#define on_call_args IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR, IARG_REG_VALUE, PinTool::ctx_call_stack
+		#define on_ret_args  IARG_INST_PTR, IARG_BRANCH_TARGET_ADDR, IARG_REG_VALUE, PinTool::ctx_call_stack
+		static void on_call(ADDRINT, ADDRINT, CallStack *);
+		static void on_ret(ADDRINT, ADDRINT, CallStack *);
+#else
+		#define on_call_args IARG_INST_PTR,          IARG_REG_VALUE, PinTool::ctx_call_stack
+		#define on_ret_args IARG_BRANCH_TARGET_ADDR, IARG_REG_VALUE, PinTool::ctx_call_stack
+		static void on_call(ADDRINT, CallStack *);
+		static void on_ret(ADDRINT, CallStack *);
+#endif
 
 		static void on_signal(THREADID thread_id, CONTEXT_CHANGE_REASON reason,
 			const CONTEXT *orig_ctx, CONTEXT *signal_ctx,
 			int32_t info, void*);
+
+		// C++ (Itanium ABI) exception handling
+		static void on_call_phase2(CallStack *, _Unwind_Context *);
+		static void on_ret_phase2(CallStack *);
 
 		inline
 		static bool is_return_addr(ADDRINT call_ins, ADDRINT ret_addr) {
