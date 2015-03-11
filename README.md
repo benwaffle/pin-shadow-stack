@@ -9,11 +9,7 @@ How to use
 
 Put [intel pin](http://pintool.org) in `../pin-2.14`
 
-`make` to build the pintool 
+`make` to build the pintool. `make debug` will cause the tool to print stuff for every `call`/`ret`
 
-DEBUG setting is in `Makefile`
-
-`make run` to run hello world
-
-make will output the command it runs; use that to try `samples/longjmp`
+`make run` to run hello world. There are more sample programs in `samples/`
 
