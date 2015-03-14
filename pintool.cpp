@@ -13,7 +13,7 @@ void ShadowStack::PinTool::on_call(const ADDRINT call_ins, CallStack *stack)
 
 void ShadowStack::PinTool::on_ret(const ADDRINT ret_addr, CallStack *stack)
 {
-	while (!is_return_addr(stack->pop(), ret_addr))
+	while (unlikely( !is_return_addr(stack->pop(), ret_addr) ))
 		;
 }
 
@@ -21,8 +21,8 @@ void ShadowStack::PinTool::on_signal(THREADID tid, CONTEXT_CHANGE_REASON reason,
 	const CONTEXT *orig_ctx, CONTEXT *signal_ctx, int32_t info, void*)
 {
 	if (likely( reason == CONTEXT_CHANGE_REASON_SIGNAL )) {
-		auto stack = reinterpret_cast<CallStack*>(PIN_GetContextReg(signal_ctx, ctx_call_stack));
-		auto signal_ctx_sp = reinterpret_cast<ADDRINT*>(PIN_GetContextReg(signal_ctx, REG_STACK_PTR));
+		auto stack = (CallStack*)(PIN_GetContextReg(signal_ctx, ctx_call_stack));
+		auto signal_ctx_sp = (ADDRINT*)(PIN_GetContextReg(signal_ctx, REG_STACK_PTR));
 		stack->push(*signal_ctx_sp);
 	}
 }
@@ -36,7 +36,7 @@ void ShadowStack::PinTool::on_ret_phase2(CallStack *stack)
 {
 	PIN_LockClient();
 
-	ADDRINT catch_addr = (ADDRINT) _Unwind_GetIP(stack->handler_ctx); // IP in catch, i.e. return address
+	ADDRINT catch_addr = ADDRINT(_Unwind_GetIP(stack->handler_ctx)); // IP in catch, i.e. return address
 	ADDRINT catch_func = RTN_Address(RTN_FindByAddress(catch_addr)); // address of function containing catch
 
 	CallFrame top_frame_copy = stack->pop(); // IPOINT_AFTER is right at the ret instruction, so save the top frame

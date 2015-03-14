@@ -7,11 +7,9 @@
 #include "call_frame.h"
 #include "util.h"
 
-// proxy class to std::stack for better pop()
 class CallStack
 {
 public:
-	// ADDRINT call_phase2 = 0;
 	_Unwind_Context *handler_ctx = nullptr;
 
 	inline
@@ -24,7 +22,7 @@ public:
 		if (unlikely(frames.size() <= 0))
 			die("pop(): stack empty");
 
-		CallFrame top = frames.top();
+		auto top = frames.top();
 		frames.pop();
 		return top;
 	}
@@ -39,7 +37,6 @@ public:
 		return frames.size();
 	}
 
-// #ifdef DEBUG
 	void trace() const {
 		PIN_LockClient();
 
@@ -47,9 +44,9 @@ public:
 		for (int i = 0; copy.size() != 0; ++i) {
 			ADDRINT call = copy.top()
 #ifdef DEBUG
-			.call_ins
+				.call_ins
 #endif
-			;
+				;
 			copy.pop();
 
 			int32_t lineno;
@@ -67,7 +64,6 @@ public:
 
 		PIN_UnlockClient();
 	}
-// #endif
 
 private:
 	std::stack<CallFrame> frames;

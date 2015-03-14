@@ -10,7 +10,6 @@
 #define GREEN  "\e[32m"
 #define YELLOW "\e[33m"
 #define BLUE   "\e[44m"
-#define PURPLE "\e[35m"
 #define RESET  "\e[0m"
 
 #define likely(x) __builtin_expect((x), 1)

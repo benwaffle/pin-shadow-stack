@@ -41,11 +41,11 @@ void ShadowStack::PinTool::on_signal(THREADID tid, CONTEXT_CHANGE_REASON reason,
 	const CONTEXT *orig_ctx, CONTEXT *signal_ctx, int32_t info, void*)
 {
 	if (likely( reason == CONTEXT_CHANGE_REASON_SIGNAL )) {
-		auto stack = reinterpret_cast<CallStack*>(PIN_GetContextReg(signal_ctx, ctx_call_stack));
+		auto stack = (CallStack*)(PIN_GetContextReg(signal_ctx, ctx_call_stack));
 
 		lockprf(BLUE "t%d: client program received signal %d (%s)" RESET "\n", tid, info, strsignal(info));
 
-		auto signal_ctx_sp = reinterpret_cast<ADDRINT*>(PIN_GetContextReg(signal_ctx, REG_STACK_PTR));
+		auto signal_ctx_sp = (ADDRINT*)(PIN_GetContextReg(signal_ctx, REG_STACK_PTR));
 		auto signal_ctx_ip = PIN_GetContextReg(signal_ctx, REG_INST_PTR);
 
 		CallFrame frame = {*signal_ctx_sp, signal_ctx_ip};
@@ -66,7 +66,7 @@ void ShadowStack::PinTool::on_ret_phase2(CallStack *stack)
 {
 	PIN_LockClient();
 
-	ADDRINT catch_addr = (ADDRINT) _Unwind_GetIP(stack->handler_ctx); // IP in catch, i.e. return address
+	ADDRINT catch_addr = ADDRINT(_Unwind_GetIP(stack->handler_ctx)); // IP in catch, i.e. return address
 	ADDRINT catch_func = RTN_Address(RTN_FindByAddress(catch_addr)); // address of function containing catch
 
 	CallFrame top_frame_copy = stack->pop(); // IPOINT_AFTER is right at the ret instruction, so save the top frame
