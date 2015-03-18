@@ -26,12 +26,12 @@ void ShadowStack::on_ret(const ADDRINT ret_ins, const ADDRINT ret_addr, THREADID
 	unindent();
 
 	while(!is_return_addr(stack->pop().call_ins, ret_addr)) {
-			lockprf("t%d: " RED "skipping a frame" RESET "\n", PIN_ThreadId());
+			lockprf("t%d: " RED "skipping a frame" RESET "\n", tid);
 			unindent();
 	}
 
 	lockprf("t%d: %p: ret (to " GREEN "%p" RESET ")\n",
-		PIN_ThreadId(), (void*)ret_ins, (void*)ret_addr);
+		tid, (void*)ret_ins, (void*)ret_addr);
 }
 
 void ShadowStack::on_signal(THREADID tid, CONTEXT_CHANGE_REASON reason,
@@ -86,6 +86,6 @@ void ShadowStack::on_ret_phase2(THREADID tid)
 
 	PIN_UnlockClient();
 
-	lockprf(BLUE "t%d: catch handler @ %p in %p <%s>" RESET "\n", PIN_ThreadId(),
+	lockprf(BLUE "t%d: catch handler @ %p in %p <%s>" RESET "\n", tid,
 		(void*)catch_addr, (void*)catch_func, RTN_FindNameByAddress(catch_func).c_str());
 }

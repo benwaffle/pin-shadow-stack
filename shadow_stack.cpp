@@ -25,14 +25,6 @@ namespace ShadowStack
 		}
 	}
 
-	void on_fork(THREADID tid, const CONTEXT*, void*)
-	{
-		PIN_Detach();
-		locked([](THREADID){
-			fprintf(stderr, "Warning: this pintool does not support fork()\n");
-		});
-	}
-
 	void find_cxx_phase2(IMG img, void*)
 	{
 		/*
@@ -74,7 +66,6 @@ int main(int argc, char *argv[])
 
 	PIN_InitLock(&prlock);
 
-	PIN_AddForkFunction(FPOINT_BEFORE, ShadowStack::on_fork, nullptr);
 	PIN_AddThreadStartFunction(ShadowStack::on_thread_start, nullptr);
 	PIN_AddContextChangeFunction(ShadowStack::on_signal, nullptr);
 	IMG_AddInstrumentFunction(ShadowStack::find_cxx_phase2, nullptr);
