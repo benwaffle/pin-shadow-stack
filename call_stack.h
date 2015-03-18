@@ -65,6 +65,11 @@ public:
 		PIN_UnlockClient();
 	}
 
+	static void destroy(void *cs)
+	{
+		delete (CallStack*)cs;
+	}
+
 private:
 	std::stack<CallFrame> frames;
 };

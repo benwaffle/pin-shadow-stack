@@ -5,16 +5,11 @@
 
 namespace ShadowStack
 {
-	REG ctx_call_stack;
+	TLS_KEY tls_call_stack;
 
-	void on_thread_start(uint32_t thread_id, CONTEXT *context, int, void*)
+	void on_thread_start(THREADID tid, CONTEXT*, int, void*)
 	{
-		PIN_SetContextReg(context, ctx_call_stack, ADDRINT(new CallStack));
-	}
-
-	void on_thread_end(uint32_t thread_id, const CONTEXT *context, int, void*)
-	{
-		delete (CallStack*)(PIN_GetContextReg(context, ctx_call_stack));
+		PIN_SetThreadData(tls_call_stack, new CallStack, tid);
 	}
 
 	void do_trace(TRACE tr, void*)
@@ -51,13 +46,13 @@ namespace ShadowStack
 
 			RTN_InsertCall(rtn, IPOINT_BEFORE,
 				AFUNPTR(&on_call_phase2),
-				IARG_REG_VALUE, ctx_call_stack,
+				IARG_THREAD_ID,
 				IARG_FUNCARG_ENTRYPOINT_VALUE, 1, // _Unwind_Context*
 				IARG_END);
 
 			RTN_InsertCall(rtn, IPOINT_AFTER,
 				AFUNPTR(&on_ret_phase2),
-				IARG_REG_VALUE, ctx_call_stack,
+				IARG_THREAD_ID,
 				IARG_END);
 
 			RTN_Close(rtn);
@@ -75,13 +70,12 @@ int main(int argc, char *argv[])
 	PIN_Init(argc, argv);
 	PIN_InitSymbols();
 
-	ShadowStack::ctx_call_stack = PIN_ClaimToolRegister();
+	ShadowStack::tls_call_stack = PIN_CreateThreadDataKey(&CallStack::destroy);
 
 	PIN_InitLock(&prlock);
 
 	PIN_AddForkFunction(FPOINT_BEFORE, ShadowStack::on_fork, nullptr);
 	PIN_AddThreadStartFunction(ShadowStack::on_thread_start, nullptr);
-	PIN_AddThreadFiniFunction(ShadowStack::on_thread_end, nullptr);
 	PIN_AddContextChangeFunction(ShadowStack::on_signal, nullptr);
 	IMG_AddInstrumentFunction(ShadowStack::find_cxx_phase2, nullptr);
 	TRACE_AddInstrumentFunction(ShadowStack::do_trace, nullptr);
