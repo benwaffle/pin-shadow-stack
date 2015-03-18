@@ -36,7 +36,6 @@ void locked(std::function<void(THREADID)> func){
     }
 #endif
 
-
 int stdin_copy = -1,
     stdout_copy = -1,
     stderr_copy = -1;
@@ -52,6 +51,7 @@ void fixio() {
     dup2(stdout_copy, STDOUT_FILENO);
     dup2(stderr_copy, STDERR_FILENO);
 }
+
 
 void die(string msg) {
     fprintf(stderr, RED "%s" RESET "\n", msg.c_str());

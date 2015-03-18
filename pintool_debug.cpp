@@ -7,10 +7,7 @@
 #include "call_frame.h"
 #include "util.h"
 
-void ShadowStack::PinTool::on_call(
-	const ADDRINT call_ins,
-	const ADDRINT target_addr,
-	CallStack *stack)
+void ShadowStack::on_call(const ADDRINT call_ins, const ADDRINT target_addr, CallStack *stack)
 {
 	CallFrame frame = {call_ins, target_addr};
 	stack->push(frame);
@@ -22,10 +19,7 @@ void ShadowStack::PinTool::on_call(
 	indent();
 }
 
-void ShadowStack::PinTool::on_ret(
-	const ADDRINT ret_ins,
-	const ADDRINT ret_addr,
-	CallStack *stack)
+void ShadowStack::on_ret(const ADDRINT ret_ins, const ADDRINT ret_addr, CallStack *stack)
 {
 	unindent();
 
@@ -34,16 +28,18 @@ void ShadowStack::PinTool::on_ret(
 			unindent();
 	}
 
-	lockprf("t%d: %p: ret (to " GREEN "%p" RESET ")\n", PIN_ThreadId(), (void*)ret_ins, (void*)ret_addr);
+	lockprf("t%d: %p: ret (to " GREEN "%p" RESET ")\n",
+		PIN_ThreadId(), (void*)ret_ins, (void*)ret_addr);
 }
 
-void ShadowStack::PinTool::on_signal(THREADID tid, CONTEXT_CHANGE_REASON reason,
+void ShadowStack::on_signal(THREADID tid, CONTEXT_CHANGE_REASON reason,
 	const CONTEXT *orig_ctx, CONTEXT *signal_ctx, int32_t info, void*)
 {
 	if (likely( reason == CONTEXT_CHANGE_REASON_SIGNAL )) {
 		auto stack = (CallStack*)(PIN_GetContextReg(signal_ctx, ctx_call_stack));
 
-		lockprf(BLUE "t%d: client program received signal %d (%s)" RESET "\n", tid, info, strsignal(info));
+		lockprf(BLUE "t%d: client program received signal %d (%s)" RESET "\n",
+			tid, info, strsignal(info));
 
 		auto signal_ctx_sp = (ADDRINT*)(PIN_GetContextReg(signal_ctx, REG_STACK_PTR));
 		auto signal_ctx_ip = PIN_GetContextReg(signal_ctx, REG_INST_PTR);
@@ -51,25 +47,28 @@ void ShadowStack::PinTool::on_signal(THREADID tid, CONTEXT_CHANGE_REASON reason,
 		CallFrame frame = {*signal_ctx_sp, signal_ctx_ip};
 		stack->push(frame);
 	} else if (reason == CONTEXT_CHANGE_REASON_FATALSIGNAL) {
-		lockprf(RED "t%d: client program received fatal signal %d (%s)" RESET "\n", tid, info, strsignal(info));
+		lockprf(RED "t%d: client program received fatal signal %d (%s)" RESET "\n",
+			tid, info, strsignal(info));
 	} else {
 		lockprf(BLUE "t%d: unknown context change (%d)" RESET "\n", tid, (int)reason);
 	}
 }
 
-void ShadowStack::PinTool::on_call_phase2(CallStack *stack, _Unwind_Context *uw)
+void ShadowStack::on_call_phase2(CallStack *stack, _Unwind_Context *uw)
 {
 	stack->handler_ctx = uw;
 }
 
-void ShadowStack::PinTool::on_ret_phase2(CallStack *stack)
+void ShadowStack::on_ret_phase2(CallStack *stack)
 {
 	PIN_LockClient();
 
-	ADDRINT catch_addr = ADDRINT(_Unwind_GetIP(stack->handler_ctx)); // IP in catch, i.e. return address
-	ADDRINT catch_func = RTN_Address(RTN_FindByAddress(catch_addr)); // address of function containing catch
-
-	CallFrame top_frame_copy = stack->pop(); // IPOINT_AFTER is right at the ret instruction, so save the top frame
+	// IP in catch, i.e. return address
+	ADDRINT catch_addr = ADDRINT(_Unwind_GetIP(stack->handler_ctx));
+	// address of function containing catch
+	ADDRINT catch_func = RTN_Address(RTN_FindByAddress(catch_addr));
+	// IPOINT_AFTER is right at the ret instruction, so save the top frame
+	CallFrame top_frame_copy = stack->pop();
 
 	while (likely( RTN_Address(RTN_FindByAddress(stack->peek().call_ins)) != catch_func ))
 	{
@@ -84,5 +83,5 @@ void ShadowStack::PinTool::on_ret_phase2(CallStack *stack)
 	PIN_UnlockClient();
 
 	lockprf(BLUE "t%d: catch handler @ %p in %p <%s>" RESET "\n", PIN_ThreadId(),
-		(void*)catch_addr, (void*)catch_func, RTN_FindNameByAddress(ADDRINT(catch_func)).c_str());
+		(void*)catch_addr, (void*)catch_func, RTN_FindNameByAddress(catch_func).c_str());
 }

@@ -6,18 +6,18 @@
 #include "call_frame.h"
 #include "util.h"
 
-void ShadowStack::PinTool::on_call(const ADDRINT call_ins, CallStack *stack)
+void ShadowStack::on_call(const ADDRINT call_ins, CallStack *stack)
 {
 	stack->push(call_ins);
 }
 
-void ShadowStack::PinTool::on_ret(const ADDRINT ret_addr, CallStack *stack)
+void ShadowStack::on_ret(const ADDRINT ret_addr, CallStack *stack)
 {
 	while (unlikely( !is_return_addr(stack->pop(), ret_addr) ))
 		;
 }
 
-void ShadowStack::PinTool::on_signal(THREADID tid, CONTEXT_CHANGE_REASON reason,
+void ShadowStack::on_signal(THREADID tid, CONTEXT_CHANGE_REASON reason,
 	const CONTEXT *orig_ctx, CONTEXT *signal_ctx, int32_t info, void*)
 {
 	if (likely( reason == CONTEXT_CHANGE_REASON_SIGNAL )) {
@@ -27,12 +27,12 @@ void ShadowStack::PinTool::on_signal(THREADID tid, CONTEXT_CHANGE_REASON reason,
 	}
 }
 
-void ShadowStack::PinTool::on_call_phase2(CallStack *stack, _Unwind_Context *uw)
+void ShadowStack::on_call_phase2(CallStack *stack, _Unwind_Context *uw)
 {
 	stack->handler_ctx = uw;
 }
 
-void ShadowStack::PinTool::on_ret_phase2(CallStack *stack)
+void ShadowStack::on_ret_phase2(CallStack *stack)
 {
 	PIN_LockClient();
 
