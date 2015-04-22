@@ -69,8 +69,7 @@ void ShadowStack::on_ret_phase2(THREADID tid)
 
 	// IP in catch, i.e. return address
 	ADDRINT catch_addr = ADDRINT(_Unwind_GetIP(stack->handler_ctx));
-	// address of function containing catch
-	ADDRINT catch_func = RTN_Address(RTN_FindByAddress(catch_addr));
+
 	// IPOINT_AFTER is right at the ret instruction, so save the top frame
 	CallFrame top_frame_copy = stack->pop();
 	CallFrame handler = { catch_addr, 0 };
@@ -79,6 +78,5 @@ void ShadowStack::on_ret_phase2(THREADID tid)
 
 	PIN_UnlockClient();
 
-	lockprf(BLUE "t%d: catch handler @ %p in %p <%s>" RESET "\n", tid,
-		(void*)catch_addr, (void*)catch_func, RTN_FindNameByAddress(catch_func).c_str());
+	lockprf(BLUE "t%d: catch handler @ %p" RESET "\n", tid, (void*)catch_addr);
 }
