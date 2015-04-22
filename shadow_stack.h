@@ -40,7 +40,6 @@ namespace ShadowStack {
 		 signal handlers are called, call_ins is the return address taken from
 		 the stack (there is no call instruction i can take the address of).
 		*/
-		 auto diff = ret_addr - call_ins;
-		 return 0 <= diff && diff <= 8;
+		 return (ret_addr - call_ins) <= 8;
 	}
 }

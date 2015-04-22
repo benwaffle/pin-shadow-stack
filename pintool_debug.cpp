@@ -73,13 +73,6 @@ void ShadowStack::on_ret_phase2(THREADID tid)
 	ADDRINT catch_func = RTN_Address(RTN_FindByAddress(catch_addr));
 	// IPOINT_AFTER is right at the ret instruction, so save the top frame
 	CallFrame top_frame_copy = stack->pop();
-
-	while (likely( RTN_Address(RTN_FindByAddress(stack->peek().call_ins)) != catch_func ))
-	{
-		stack->pop();
-		unindent();
-	}
-
 	CallFrame handler = { catch_addr, 0 };
 	stack->push(handler);
 	stack->push(top_frame_copy);

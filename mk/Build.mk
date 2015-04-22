@@ -6,6 +6,8 @@ endif
 
 PIN_ROOT = ../pin-2.14
 
+CXX=clang++
+
 include mk/Intel.mk
 
 TOOL_CXXFLAGS += -std=c++11 -g
