@@ -2,8 +2,9 @@
 *.o
 a.out
 pin.log
-samples/
+samples/*
 !samples/*.c
 !samples/*.cpp
+!samples/*.js
 !samples/Makefile
 !samples/test.sh
